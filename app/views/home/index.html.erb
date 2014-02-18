@@ -1,2 +1,77 @@
-<h2>Welcome to ChalkScribe</h2>
-<%=
+<h1>Welcome to ChalkScribe</h1>
+
+<% if user_signed_in? %>
+<h3>Thank you for coming back, <%= current_user.name %> !</h3>
+<p>
+<button onclick="record()">Record</button>
+<button onclick="stop()">Stop</button>
+</p>
+<div id="log">
+</div>
+<script language = "JavaScript">
+var data = {};
+
+function log(message) {
+    var div = document.createElement('div');
+    var message = '[' + new Date().toLocaleTimeString() + '] ' + message;
+    div.appendChild(document.createTextNode(message));
+    var log = document.getElementById('log');
+    log.insertBefore(div, log.firstChild);
+}
+
+function processAudioBuffer(e) {
+    var floats = e.inputBuffer.getChannelData(0);
+    var min = 0, max = 0;
+    for (var i = 0; i < floats.length; i++) {
+        var current = floats[i];
+        min = Math.min(current, min);
+        max = Math.max(current, max);
+    }
+    log('Block min/max: ' + min.toFixed(3) + ', ' + max.toFixed(3));
+}
+
+function record() {
+    if (!window.AudioContext) {
+        window.AudioContext = window.webkitAudioContext;
+    }
+    if (!navigator.getUserMedia) {
+        navigator.getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    }
+    data.context = new AudioContext();
+    navigator.getUserMedia({audio: true}, function(stream) {
+        data.mediaStream = stream;
+        startAudio();
+    }, function(error) {
+        log('Stream get error: ' + error);
+    });
+}
+
+function startAudio() {
+    // Get input media stream.
+    data.audioStream = data.context.createMediaStreamSource(data.mediaStream);
+
+    // Set up JS processor.
+    data.processor = data.context.createScriptProcessor(2048, 1, 1);
+    data.processor.onaudioprocess = processAudioBuffer;
+
+    // You need to connect the output of processor to the audio output or it
+    // doesn't work. (In Firefox, connecting it just to a gain node works;
+    // in Chrome you have to connect to output like this.)
+    data.processor.connect(data.context.destination);
+
+    // Connect input stream to processor, then we're done.
+    data.audioStream.connect(data.processor);
+    log('Stream connected OK');
+}
+
+function stop() {
+    data.audioStream.disconnect();
+    data.processor.disconnect();
+    data.mediaStream.stop();
+    data.processor.onaudioprocess = null;
+    log('Stream stop OK');
+}
+</script>
+<% else %>
+<h3><strong> Please Log in Using your Facebook Account, Above </strong></h3>
+<% end %>

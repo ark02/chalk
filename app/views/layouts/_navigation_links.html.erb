@@ -4,6 +4,9 @@
 <% end %>
 <% if user_signed_in? %>
   <li><%= link_to 'Logout', signout_path %></li>
+<% end %>
+<% if user_signed_in? %>
+  <li><%= link_to "New Photo", new_photo_path %></li>
 <% else %>
   <li><%= link_to 'Login', signin_path %></li>
 <% end %>
